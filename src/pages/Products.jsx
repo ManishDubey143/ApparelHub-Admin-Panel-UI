@@ -1,18 +1,29 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/axiosInstance";
 import "../assets/Products.css";
 import ProductModal from "../components/ProductModal";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchProducts = async () => {
-    const res = await axios.get(`${API_BASE_URL}/api/products`);
-    setProducts(res.data);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.get("/products");
+      setProducts(res.data);
+    } catch (err) {
+      setError("Failed to fetch products");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -20,20 +31,16 @@ export default function Products() {
   }, []);
 
   const deleteProduct = async (id) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Login required");
-      return;
-    }
     if (!window.confirm("Delete this product?")) return;
-    await axios.delete(`${API_BASE_URL}/api/products/${id}`,
-        {
-            headers: {
-            Authorization: `Bearer ${token}`
-            }
-        });
-    fetchProducts();
+    try {
+      await api.delete(`/products/${id}`);
+      fetchProducts();
+    } catch (err) {
+      setError("Failed to delete product");
+      console.error(err);
+    }
   };
+
   return (
     <>
       <div className="d-flex justify-content-between mb-3">
@@ -49,61 +56,80 @@ export default function Products() {
         </button>
       </div>
 
-      {/* PRODUCT TABLE */}
-      <table className="table table-bordered table-hover">
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>Image</th>
-            <th>Name</th>
-            <th>Price</th>
-            <th>Stock</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+      {error && <div className="alert alert-danger">{error}</div>}
 
-        <tbody>
-          {products.map((p, i) => (
-            <tr key={p.id}>
-              <td>{i + 1}</td>
-
-              <td>
-                <div className="img-hover-wrapper">
-                  <img
-                    src={`${API_BASE_URL}${p.image_url}`}
-                    alt={p.name}
-                    className="img-small"
-                  />
-                  <div className="img-preview">
-                    <img
-                      src={`${API_BASE_URL}${p.image_url}`}
-                      alt={p.name}
-                    />
-                  </div>
-                </div>
-              </td>
-
-              <td>{p.name}</td>
-              <td>₹{p.price}</td>
-              <td>{p.stock}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-2"
-                  onClick={() => {
-                    setEditProduct(p);
-                    setShowModal(true);
-                  }}
-                >
-                  Edit
-                </button>
-                <button className="btn btn-sm btn-danger" onClick={() => deleteProduct(p.id)} >Delete</button>
-              </td>
+      {loading ? (
+        <div className="text-center p-5">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      ) : (
+        <table className="table table-bordered table-hover">
+          <thead className="table-dark">
+            <tr>
+              <th>#</th>
+              <th>Image</th>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
 
-      {/* ✅ REUSABLE MODAL */}
+          <tbody>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="text-center p-4">No products found</td>
+              </tr>
+            ) : (
+              products.map((p, i) => (
+                <tr key={p.id}>
+                  <td>{i + 1}</td>
+
+                  <td>
+                    <div className="img-hover-wrapper">
+                      <img
+                        src={`${API_BASE_URL}${p.image_url}`}
+                        alt={p.name}
+                        className="img-small"
+                      />
+                      <div className="img-preview">
+                        <img
+                          src={`${API_BASE_URL}${p.image_url}`}
+                          alt={p.name}
+                        />
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>{p.name}</td>
+                  <td>₹{p.price}</td>
+                  <td>{p.stock}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-warning me-2"
+                      onClick={() => {
+                        setEditProduct(p);
+                        setShowModal(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-danger" 
+                      onClick={() => deleteProduct(p.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      )}
+
       <ProductModal
         show={showModal}
         editData={editProduct}

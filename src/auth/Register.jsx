@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -17,7 +18,7 @@ export default function Register() {
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/auth/register",
+        `${API_BASE_URL}/api/auth/register`,
         form
       );
 

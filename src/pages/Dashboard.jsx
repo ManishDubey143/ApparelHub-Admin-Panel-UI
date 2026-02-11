@@ -1,4 +1,36 @@
+import { useEffect, useState } from "react";
+import api from "../services/axiosInstance";
+
 export default function Dashboard() {
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalUsers: 0,
+    revenue: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Call your dashboard API endpoint
+        const res = await api.get("/dashboard/stats");
+        setStats(res.data);
+      } catch (err) {
+        console.error("Failed to fetch stats", err);
+        // Fallback to default values if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center p-5">Loading...</div>;
+  }
+
   return (
     <>
       <h3 className="mb-4">Overview</h3>
@@ -8,7 +40,7 @@ export default function Dashboard() {
           <div className="card text-center shadow-sm">
             <div className="card-body">
               <h6>Total Products</h6>
-              <h3>120</h3>
+              <h3>{stats.totalProducts}</h3>
             </div>
           </div>
         </div>
@@ -17,7 +49,7 @@ export default function Dashboard() {
           <div className="card text-center shadow-sm">
             <div className="card-body">
               <h6>Total Orders</h6>
-              <h3>320</h3>
+              <h3>{stats.totalOrders}</h3>
             </div>
           </div>
         </div>
@@ -26,7 +58,7 @@ export default function Dashboard() {
           <div className="card text-center shadow-sm">
             <div className="card-body">
               <h6>Users</h6>
-              <h3>85</h3>
+              <h3>{stats.totalUsers}</h3>
             </div>
           </div>
         </div>
@@ -35,7 +67,7 @@ export default function Dashboard() {
           <div className="card text-center shadow-sm">
             <div className="card-body">
               <h6>Revenue</h6>
-              <h3>₹2.4L</h3>
+              <h3>₹{stats.revenue}</h3>
             </div>
           </div>
         </div>
